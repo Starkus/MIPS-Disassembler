@@ -10,6 +10,8 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.Stage;
+import net.starkus.appify.files.RecentFilesManager;
+import net.starkus.mipsstudio.project.Project;
 import net.starkus.mipsstudio.view.MainWindowController;
 
 public class MainApp extends Application {
@@ -17,11 +19,17 @@ public class MainApp extends Application {
 	
 	private static Stage mainStage;
 	
+	private static RecentFilesManager<File> recents = new RecentFilesManager<>();
+	
+	private static Project currentProject;
+	
 	
 	@Override
 	public void start(Stage primaryStage) throws Exception
 	{
 		mainStage = primaryStage;
+		
+		currentProject = new Project("Proyecto!", new File("C:/Users/emili/proyecto/"));
 		
 		try	{
 			MainWindowController controller = loadMainWindow();
@@ -82,6 +90,20 @@ public class MainApp extends Application {
 	public static Stage getMainStage()
 	{
 		return mainStage;
+	}
+	
+	public static RecentFilesManager<File> getRecentFilesManager()
+	{
+		return recents;
+	}
+	
+	public static void setCurrentProject(Project project)
+	{
+		currentProject = project;
+	}
+	public static Project getCurrentProject()
+	{
+		return currentProject;
 	}
 	
 	

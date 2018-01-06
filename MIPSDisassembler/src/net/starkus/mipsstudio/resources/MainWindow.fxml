@@ -7,29 +7,9 @@
 
 <AnchorPane prefHeight="700.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.starkus.mipsstudio.view.MainWindowController">
    <children>
-      <VBox prefHeight="700.0" prefWidth="800.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+      <VBox fx:id="menuBarVBox" prefHeight="700.0" prefWidth="800.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
-            <MenuBar>
-              <menus>
-                <Menu mnemonicParsing="false" text="File">
-                  <items>
-                    <MenuItem fx:id="openCmd" mnemonicParsing="false" text="Open" />
-                        <MenuItem fx:id="closeCmd" mnemonicParsing="false" text="Close" />
-                  </items>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Edit">
-                  <items>
-                    <MenuItem mnemonicParsing="false" text="Delete" />
-                  </items>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Help">
-                  <items>
-                    <MenuItem mnemonicParsing="false" text="About" />
-                  </items>
-                </Menu>
-              </menus>
-            </MenuBar>
-            <BorderPane prefHeight="700.0" prefWidth="800.0">
+            <BorderPane fx:id="borderPane" prefHeight="700.0" prefWidth="800.0">
                <top>
                   <ToolBar prefHeight="40.0" prefWidth="200.0" BorderPane.alignment="CENTER">
                     <items>
@@ -53,6 +33,9 @@
                     </columns>
                   </TableView>
                </center>
+               <left>
+                  <TreeView fx:id="projectExplorer" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+               </left>
             </BorderPane>
          </children>
       </VBox>

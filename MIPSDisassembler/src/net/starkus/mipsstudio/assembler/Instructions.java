@@ -1,14 +1,11 @@
 package net.starkus.mipsstudio.assembler;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.naming.InvalidNameException;
 
-import net.starkus.mipsstudio.MainApp;
 import net.starkus.mipsstudio.assembler.OpcodeFormats.Format;
 
 public class Instructions {
@@ -16,32 +13,7 @@ public class Instructions {
 	private static List<String> opcodes, functions, regimm, cop1fmt, cop1func,
 			copx, cop2func, cop0fmt, cop0func, regnames;
 
-	static
-	{
-		try
-		{
-
-			opcodes = txtToList("opcodes.txt");
-			functions = txtToList("functions.txt");
-			regimm = txtToList("regimm.txt");
-			
-			cop0fmt = txtToList("cop0fmt.txt");
-			cop0func = txtToList("cop0func.txt");
-
-			cop1fmt = txtToList("cop1fmt.txt");
-			cop1func = txtToList("cop1func.txt");
-			copx = txtToList("copx.txt");
-			
-			cop2func = txtToList("cop2func.txt");
-			
-			regnames = txtToList("registernames.txt");
-
-		} catch (IOException e)
-		{
-			e.printStackTrace();
-		}
-	}
-
+	@Deprecated
 	public static String parseInstruction(int word, long programCounter) throws InvalidNameException
 	{
 		String opcode = identifyOpcode(word);
@@ -227,8 +199,8 @@ public class Instructions {
 		}
 		else if (opcode.equals("MTC0") || opcode.equals("MTC1"))
 		{
-			int RS = word >>> 21 & 0b11111;
-			int FT = word >>> 16 & 0b11111;
+			int RS = word >>> 16 & 0b11111;
+			int FT = word >>> 11 & 0b11111;
 
 			return String.format("R%d, F%d", RS, FT);
 		}
@@ -431,18 +403,5 @@ public class Instructions {
 		}
 		
 		return result;
-	}
-
-	private static List<String> txtToList(String filename) throws IOException
-	{
-		String[] lines = MainApp.getResourceAsString(filename).split("\n");
-		List<String> list = new ArrayList<>();
-
-		for (String l : lines)
-		{
-			list.add(l.replace("\r", ""));
-		}
-
-		return list;
 	}
 }

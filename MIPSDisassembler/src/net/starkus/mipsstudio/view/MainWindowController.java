@@ -4,25 +4,28 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import javax.naming.InvalidNameException;
-
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import net.starkus.appify.files.RecentFilesManager;
 import net.starkus.mipsstudio.MainApp;
-import net.starkus.mipsstudio.assembler.Instructions;
 import net.starkus.mipsstudio.model.CodeEntry;
+import net.starkus.mipsstudio.model.Instruction;
+import net.starkus.mipsstudio.save.JSONUtils;
 
 
 public class MainWindowController {
 	
 	@FXML
-	private MenuItem openCmd;
+	private VBox menuBarVBox;
+	@FXML
+	private BorderPane borderPane;
 	
 	@FXML
 	private Button refreshCmd;
@@ -49,14 +52,34 @@ public class MainWindowController {
 	@FXML
 	void initialize()
 	{
-		openCmd.setOnAction(e -> openFile());
+		TopMenuBar topMenuBar = new TopMenuBar();
+		
+		topMenuBar.getImportROMCmd().setOnAction(e -> importROM());
+		topMenuBar.getOpenCmd().setOnAction(e -> openFile());
+		topMenuBar.getFileMenu().setRecentEntryOnAction(e -> openFile(e.getFile()));
+		
+		menuBarVBox.getChildren().add(0, topMenuBar);
+		
+		
+		ProjectExplorer projectExplorer = new ProjectExplorer(MainApp.getCurrentProject());
+		projectExplorer.setOpenFileConsumer(f -> openFile(f));
+		borderPane.setLeft(projectExplorer);
+		
+		
 		refreshCmd.setOnAction(e -> readFile(0));
 		
 		goButton.setOnAction(e -> {
-			long offset = Long.parseLong(addressField.getText(), 16);
+			int offset = Integer.parseInt(addressField.getText(), 16);
 			readFile(offset);
 		});
 		addressField.setOnAction(goButton.getOnAction());
+		
+		
+		JSONUtils.Load();
+		
+		MainApp.getRecentFilesManager().setOnChange(e -> {
+			JSONUtils.Save();
+		});
 		
 		
 		initTable();
@@ -65,25 +88,99 @@ public class MainWindowController {
 	void initTable()
 	{
 		addressColumn.setCellValueFactory(v -> v.getValue().addressProperty());
-		hexColumn.setCellValueFactory(v -> v.getValue().hexProperty());
+		hexColumn.setCellValueFactory(v -> {
+			CodeEntry c = v.getValue();
+			
+			if (c.getAssembly() == null || c.getAssembly().isEmpty())
+			{
+				try
+				{
+					RandomAccessFile raFile = new RandomAccessFile(currentFile, "r");
+					raFile.seek(c.getAddress());
+					
+					int hex = readHex(raFile);
+					Instruction instruction = Instruction.fromWord(hex);
+					CodeEntry codeEntry = new CodeEntry(c.getAddress(), hex, instruction);
+					
+					codeTable.getItems().set((int) (c.getAddress() / 4), codeEntry);
+					
+					raFile.close();
+				}
+				catch (IOException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+			return v.getValue().hexProperty();
+		});
 		assemblyColumn.setCellValueFactory(v -> v.getValue().assemblyProperty());
 		
 		addressColumn.setCellFactory(c -> new HexWordTableCell());		
 		hexColumn.setCellFactory(c -> new HexWordTableCell());
+		/*assemblyColumn.setCellFactory(c -> new TableCell<CodeEntry, Instruction>() {
+			@Override
+			protected void updateItem(Instruction item, boolean empty)
+			{
+				setText((empty || item==null) ? "" : item.makeString(01234)); 
+			}
+		});*/
+	}
+	
+	void importROM()
+	{
+		FileChooser fileChooser = new FileChooser();
+		
+		// Set initial dir to most recent file's folder
+		RecentFilesManager<File> recents = MainApp.getRecentFilesManager();
+		if (!recents.getRecents().isEmpty())
+		{
+			fileChooser.setInitialDirectory(recents.getRecents().get(0).getParentFile());
+		}
+		
+		File openedFile = fileChooser.showOpenDialog(MainApp.getMainStage());
+		
+		if (openedFile == null)
+			return;
+		
+		try
+		{
+			MainApp.getCurrentProject().importROMFile(openedFile);
+		} catch (IOException e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	void openFile()
 	{
 		FileChooser fileChooser = new FileChooser();
-		currentFile = fileChooser.showOpenDialog(MainApp.getMainStage());
 		
-		if (currentFile == null)
+		// Set initial dir to most recent file's folder
+		RecentFilesManager<File> recents = MainApp.getRecentFilesManager();
+		if (!recents.getRecents().isEmpty())
+		{
+			fileChooser.setInitialDirectory(recents.getRecents().get(0).getParentFile());
+		}
+		
+		File openedFile = fileChooser.showOpenDialog(MainApp.getMainStage());
+		
+		if (openedFile == null)
 			return;
 		
-		readFile(0x20160);
+		openFile(openedFile);
 	}
 	
-	void readFile(long offset)
+	void openFile(File file)
+	{
+		MainApp.getRecentFilesManager().registerRecent(file);
+		currentFile = file;
+		
+		readFile(0);
+	}
+	
+	void readFile(int offset)
 	{
 		try {
 			RandomAccessFile raFile = new RandomAccessFile(currentFile, "r");
@@ -94,12 +191,19 @@ public class MainWindowController {
 			codeTable.getItems().clear();
 			for (int i=0; i < 256; i++)
 			{
-				long address = programCounter * 4;
+				int address = (int) (programCounter * 4);
 				int hex = readHex(raFile);
-				String code = readInstruction(hex);
+				Instruction instruction = readInstruction(hex);
 				
-				//textArea.setText(textArea.getText() + address + "    " + ins + "\n");
-				codeTable.getItems().add(new CodeEntry(address, hex, code));
+				codeTable.getItems().add(new CodeEntry(address, hex, instruction));
+			}
+			
+			for (int i=256; i < 8000; ++i)
+			{
+				int address = (int) (programCounter * 4);
+				codeTable.getItems().add(new CodeEntry(address));
+				programCounter++;
+				//codeTable.getItems().add(null);
 			}
 			
 			raFile.close();
@@ -127,25 +231,12 @@ public class MainWindowController {
 		return word;
 	}
 	
-	private String readInstruction(int hex)
+	private Instruction readInstruction(int hex)
 	{
-		String ins = "";
-		
-		//ins += String.format("%08X", word) + "    ";
-		
-		try
-		{
-			ins = Instructions.parseInstruction(hex, programCounter);
-		}
-		catch (InvalidNameException e)
-		{
-			//e.printStackTrace();
-			ins += "!";
-		}
-		
+		Instruction inst = Instruction.fromWord(hex);
 		
 		programCounter++;
-		return ins;
+		return inst;
 	}
 	
 	

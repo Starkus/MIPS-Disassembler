@@ -1,44 +1,71 @@
 package net.starkus.mipsstudio.model;
 
-import javafx.beans.property.LongProperty;
-import javafx.beans.property.SimpleLongProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
+import javafx.beans.property.IntegerProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.ReadOnlyStringProperty;
+import javafx.beans.property.ReadOnlyStringWrapper;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleObjectProperty;
 
 public class CodeEntry {
 
-	private final LongProperty address = new SimpleLongProperty();
-	private final LongProperty hex = new SimpleLongProperty();
-	private final StringProperty assembly = new SimpleStringProperty();
+	private final IntegerProperty address = new SimpleIntegerProperty();
+	private final IntegerProperty hex = new SimpleIntegerProperty();
+	private final ObjectProperty<Instruction> instruction = new SimpleObjectProperty<>();
+	private final ReadOnlyStringWrapper assembly = new ReadOnlyStringWrapper();
 	
 	
 	public CodeEntry()
 	{
-		
+		instruction.addListener((obs, oldv, newv) -> assembly.set(newv.makeString((int) address.get())));
+		address.addListener((obs, oldv, newv) -> assembly.set(instruction.get().makeString((int) newv)));
 	}
 	
-	public CodeEntry(long address, long hex, String assembly)
+	public CodeEntry(int address)
+	{
+		this.address.set(address);
+	}
+	
+	public CodeEntry(int address, int hex, Instruction instruction)
 	{
 		this.address.set(address);
 		this.hex.set(hex);
-		this.assembly.set(assembly);
+		this.instruction.set(instruction);
+
+		this.instruction.addListener((obs, oldv, newv) -> {
+			updateAssembly(newv, address);
+		});
+		this.address.addListener((obs, oldv, newv) -> {
+			updateAssembly(instruction, newv.intValue());
+		});
+		
+		updateAssembly(instruction, address);
+	}
+	
+	
+	private void updateAssembly(Instruction instruction, int address)
+	{
+		if (instruction != null)
+			assembly.set(instruction.makeString(address));
+		else
+			assembly.set("?");
 	}
 
 	
-	public long getAddress()
+	public int getAddress()
 	{
 		return address.get();
 	}
-	public void setAddress(long value)
+	public void setAddress(int value)
 	{
 		address.set(value);
 	}
-	public LongProperty addressProperty()
+	public IntegerProperty addressProperty()
 	{
 		return address;
 	}
 	
-	public long getHex()
+	public int getHex()
 	{
 		return hex.get();
 	}
@@ -46,21 +73,30 @@ public class CodeEntry {
 	{
 		hex.set(value);
 	}
-	public LongProperty hexProperty()
+	public IntegerProperty hexProperty()
 	{
 		return hex;
+	}
+	
+	public Instruction getInstruction()
+	{
+		return instruction.get();
+	}
+	public void setInstruction(Instruction value)
+	{
+		instruction.set(value);
+	}
+	public ObjectProperty<Instruction> instructionProperty()
+	{
+		return instruction;
 	}
 	
 	public String getAssembly()
 	{
 		return assembly.get();
 	}
-	public void setAssembly(String value)
+	public ReadOnlyStringProperty assemblyProperty()
 	{
-		assembly.set(value);
-	}
-	public StringProperty assemblyProperty()
-	{
-		return assembly;
+		return assembly.getReadOnlyProperty();
 	}
 }
