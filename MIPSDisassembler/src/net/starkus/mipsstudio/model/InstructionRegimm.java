@@ -30,7 +30,8 @@ public abstract class InstructionRegimm extends Instruction {
 	public static Instruction fromWord(int word)
 	{
 		int regimm = (word >>> 16) & 31;
-		
+		if (regimm >= regimms.size())
+			return null;
 		String regimmPnem = regimms.get(regimm);
 		
 		switch (regimmPnem)

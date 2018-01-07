@@ -32,9 +32,13 @@ public class InstructionCop1 extends Instruction {
 	public static Instruction fromWord(int word)
 	{
 		int function = word & 63;
+		if (function >= functions.size())
+			return null;
 		String functionPnem = functions.get(function);
 		
 		int fmt = (word >>> 21) & 31;
+		if (fmt >= fmts.size())
+			return null;
 		String fmtPnem = fmts.get(fmt);
 		
 		String compoundName = String.format("%s.%s", functionPnem, fmtPnem);

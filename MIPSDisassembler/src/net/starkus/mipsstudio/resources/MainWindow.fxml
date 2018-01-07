@@ -4,6 +4,7 @@
 <?import java.lang.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import net.starkus.mipsstudio.control.LazyLoadTableView?>
 
 <AnchorPane prefHeight="700.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="net.starkus.mipsstudio.view.MainWindowController">
    <children>
@@ -25,13 +26,13 @@
                   </ToolBar>
                </top>
                <center>
-                  <TableView fx:id="codeTable" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+                  <LazyLoadTableView fx:id="codeTable" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER">
                     <columns>
                       <TableColumn fx:id="addressColumn" prefWidth="120.0" text="Address" />
                       <TableColumn fx:id="hexColumn" prefWidth="120.0" text="Hex" />
                         <TableColumn fx:id="assemblyColumn" prefWidth="200.0" text="Assembly" />
                     </columns>
-                  </TableView>
+                  </LazyLoadTableView>
                </center>
                <left>
                   <TreeView fx:id="projectExplorer" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />

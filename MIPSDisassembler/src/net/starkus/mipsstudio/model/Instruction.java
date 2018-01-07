@@ -78,9 +78,12 @@ public class Instruction {
 			return new InstructionBranch(opcodePnem, word);
 			
 			
-		case "ADDI": case "ADDIU": case "SLTI": case "SLTIU": case "ANDI": case "ORI": case "XORI": case "LUI":
+		case "ADDI": case "ADDIU": case "SLTI": case "SLTIU": case "ANDI": case "ORI": case "XORI":
 		case "DADDI": case "DADDIU":
 			return new InstructionI(opcodePnem, word);
+			
+		case "LUI":
+			return new InstructionIOneReg(opcodePnem, word);
 			
 
 		case "LDL": case "LDR":

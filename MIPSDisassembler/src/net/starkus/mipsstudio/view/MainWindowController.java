@@ -3,18 +3,20 @@ package net.starkus.mipsstudio.view;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
+import java.util.List;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import net.starkus.appify.files.RecentFilesManager;
 import net.starkus.mipsstudio.MainApp;
+import net.starkus.mipsstudio.control.LazyLoadTableView;
 import net.starkus.mipsstudio.model.CodeEntry;
 import net.starkus.mipsstudio.model.Instruction;
 import net.starkus.mipsstudio.save.JSONUtils;
@@ -35,7 +37,7 @@ public class MainWindowController {
 	private Button goButton;
 	
 	@FXML
-	private TableView<CodeEntry> codeTable;
+	private LazyLoadTableView<CodeEntry> codeTable;
 	@FXML
 	private TableColumn<CodeEntry, Number> addressColumn;
 	@FXML
@@ -70,7 +72,8 @@ public class MainWindowController {
 		
 		goButton.setOnAction(e -> {
 			int offset = Integer.parseInt(addressField.getText(), 16);
-			readFile(offset);
+			//readFile(offset);
+			codeTable.scrollTo(offset/4);
 		});
 		addressField.setOnAction(goButton.getOnAction());
 		
@@ -118,13 +121,6 @@ public class MainWindowController {
 		
 		addressColumn.setCellFactory(c -> new HexWordTableCell());		
 		hexColumn.setCellFactory(c -> new HexWordTableCell());
-		/*assemblyColumn.setCellFactory(c -> new TableCell<CodeEntry, Instruction>() {
-			@Override
-			protected void updateItem(Instruction item, boolean empty)
-			{
-				setText((empty || item==null) ? "" : item.makeString(01234)); 
-			}
-		});*/
 	}
 	
 	void importROM()
@@ -189,22 +185,83 @@ public class MainWindowController {
 			programCounter = raFile.getFilePointer() / 4;
 			
 			codeTable.getItems().clear();
-			for (int i=0; i < 256; i++)
-			{
-				int address = (int) (programCounter * 4);
-				int hex = readHex(raFile);
-				Instruction instruction = readInstruction(hex);
-				
-				codeTable.getItems().add(new CodeEntry(address, hex, instruction));
-			}
 			
-			for (int i=256; i < 8000; ++i)
+			for (int i=0; i < Math.min(raFile.length(), 8000); ++i)
 			{
 				int address = (int) (programCounter * 4);
 				codeTable.getItems().add(new CodeEntry(address));
 				programCounter++;
-				//codeTable.getItems().add(null);
 			}
+			
+			
+			codeTable.setLoadMoreFunction(oldItems -> {
+				List<CodeEntry> loaded = new ArrayList<>();
+				
+				int oldSize = oldItems.size();
+				RandomAccessFile raf;
+				try
+				{
+					raf = new RandomAccessFile(currentFile, "r");
+					
+					int currentLoadedSize = oldSize;
+					long toAdd = Math.min(currentLoadedSize + 8000, raf.length());
+					
+					for (int i=currentLoadedSize; i < toAdd; ++i)
+					{
+						int address = (int) (programCounter * 4);
+						loaded.add(new CodeEntry(address));
+						programCounter++;
+					}
+				}
+				catch (IOException e)
+				{
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+				return loaded;
+			});
+			
+			codeTable.setUpScrollBarListener(codeTable.getScrollBar());
+			
+			/*
+				// Debug
+				System.out.println(newv.doubleValue());
+
+				// If scrolled to bottom
+				if (newv.doubleValue() == scrollBar.getMax())
+				{
+					int oldSize = codeTable.getItems().size();
+					RandomAccessFile raf;
+					try
+					{
+						raf = new RandomAccessFile(currentFile, "r");
+						
+						int currentLoadedSize = codeTable.getItems().size();
+						long toAdd = Math.min(currentLoadedSize + 8000, raf.length());
+						
+						for (int i=currentLoadedSize; i < toAdd; ++i)
+						{
+							int address = (int) (programCounter * 4);
+							codeTable.getItems().add(new CodeEntry(address));
+							programCounter++;
+						}
+						
+						double newSize = codeTable.getItems().size();
+						double added = newSize - oldSize;
+						double x = added / newSize;
+						
+						System.out.println(x);
+						
+						scrollBar.setValue(1.0 - x);
+					}
+					catch (IOException e)
+					{
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			});*/
 			
 			raFile.close();
 		}

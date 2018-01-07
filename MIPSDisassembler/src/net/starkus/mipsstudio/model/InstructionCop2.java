@@ -27,7 +27,8 @@ public abstract class InstructionCop2 extends Instruction {
 
 	public static Instruction fromWord(int word)
 	{
-		int function = word & 63;
+		return null;
+		/*int function = word & 63;
 		String functionPnem = functions.get(function);
 		
 		switch (functionPnem)
@@ -36,6 +37,6 @@ public abstract class InstructionCop2 extends Instruction {
 
 		default:
 			return null;
-		}
+		}*/
 	}
 }
